@@ -30,11 +30,11 @@ delete(string $uri, array $options = []): Symfony\Contracts\HttpClient\ResponseI
 ### GET
 
 ```php
-$users = $api->get('/cgi-bin/user/list'， [
+$response = $api->get('/cgi-bin/user/list'， [
     'query' => [
             'next_openid' => 'OPENID1',
         ]
-    ])->toArray();
+    ]);
 ```
 
 ### POST
@@ -147,31 +147,65 @@ $response = $api->post('cgi-bin/media/upload?type=image', $options);
 
 API Client 基于 [symfony/http-client](https://github.com/symfony/http-client) 实现，你可以通过以下方式对响应值进行访问：
 
+
+### 数组式访问
+
+EasyWeChat 增强了 API 响应对象，比如增加了数组式访问，你可以不用每次 `toArray` 后再取值，更加便捷美观：
+
 ```php
-$response = $api->get('/cgi-bin/user/get', ['query' => ['openid' => '...']]);
+$response = $api->get('/foo/bar');
 
-// 获取状态码
-$statusCode = $response->getStatusCode();
+$response['foo']; // "bar"
+isset($response['foo']); // true
+```
 
-// 获取全部响应头
-$headers = $response->getHeaders();
+### 获取状态码
 
-// 获取响应原始内容
-$content = $response->getContent();
-// 获取响应原始内容（不抛出异常）
-$content = $response->getContent(false);
+```php
+$response->getStatusCode();
+// 200
+```
+
+### 获取响应头
+
+```php
+$response->getHeaders(); 
+// ['content-type' => ['application/json;encoding=utf-8'], '...']
+
+$response->getHeader('content-type'); 
+// ['application/json;encoding=utf-8']
+
+$response->getHeaderLine('content-type'); 
+// 'application/json;encoding=utf-8'
+```
+
+### 获取响应内容
+
+```php
+$response->getContent();
+$response->getContent(false); // 失败不抛出异常
+// {"foo":"bar"}
 
 // 获取 json 转换后的数组格式
-$content = $response->toArray();
-// 获取 json 转换后的数组格式（不抛出异常）
-$content = $response->toArray(false);
+$response->toArray();
+$response->toArray(false); // 失败不抛出异常
+// ["foo" => "bar"]
 
-// 将内容转换成 Stream 返回
-$content = $response->toStream();
-// 将内容转换成 Stream 返回 (不抛出异常)
-$content = $response->toStream(false);
+// 获取 json 
+$response->toJson();
+$response->toJson(false);
+// {"foo":"bar"}
 
-// 获取其他信息，如："response_headers", "redirect_count", "start_time", "redirect_url" 等.
+// 将内容转换成流返回
+$response->toStream();
+$response->toStream(false); // 失败不抛出异常
+```
+
+### 获取其他上下文信息
+
+如："response_headers", "redirect_count", "start_time", "redirect_url" 等：
+
+```php
 $httpInfo = $response->getInfo();
 
 // 获取指定信息

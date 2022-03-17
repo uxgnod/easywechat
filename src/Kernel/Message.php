@@ -58,7 +58,7 @@ abstract class Message implements ArrayAccess
             $attributes = $dataSet;
         }
 
-        if (empty($attributes)) {
+        if (empty($attributes) || !is_array($attributes)) {
             throw new BadRequestException('Failed to decode request contents.');
         }
 
@@ -72,6 +72,6 @@ abstract class Message implements ArrayAccess
 
     public function __toString()
     {
-        return $this->toJson();
+        return $this->toJson() ?: '';
     }
 }

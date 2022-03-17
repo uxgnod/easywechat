@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EasyWeChat\Pay;
 
+use EasyWeChat\Kernel\HttpClient\Response;
 use EasyWeChat\Kernel\Support\PrivateKey;
 use EasyWeChat\Kernel\Support\PublicKey;
 use EasyWeChat\Kernel\Support\UserAgent;
@@ -67,14 +68,19 @@ class Client implements HttpClientInterface
     }
 
     /**
-     * @param  array<string, mixed>  $options
+     * @param  array<string, array|mixed>  $options
      *
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      * @throws \Exception
      */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
-        $options['headers']['User-Agent'] = UserAgent::create([$options['headers']['User-Agent'] ?? '']);
+        if (empty($options['headers'])) {
+            $options['headers'] = [];
+        }
+
+        /** @phpstan-ignore-next-line */
+        $options['headers']['User-Agent'] = UserAgent::create();
 
         if ($this->isV3Request($url)) {
             [, $options] = $this->prepareRequest($method, $url, $options, $this->defaultOptions, true);
@@ -98,12 +104,13 @@ class Client implements HttpClientInterface
                 $options['body'] = Xml::build($this->attachLegacySignature($options['body']));
             }
 
+            /** @phpstan-ignore-next-line */
             if (!isset($options['headers']['Content-Type']) && !isset($options['headers']['content-type'])) {
-                $options['headers']['Content-Type'] = 'text/xml';
+                $options['headers']['Content-Type'] = 'text/xml'; /** @phpstan-ignore-line */
             }
         }
 
-        return $this->client->request($method, $url, $options);
+        return new Response($this->client->request($method, $url, $options));
     }
 
     protected function isV3Request(string $url): bool

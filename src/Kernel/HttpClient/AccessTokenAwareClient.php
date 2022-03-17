@@ -41,12 +41,12 @@ class AccessTokenAwareClient implements AccessTokenAwareHttpClientInterface
     public function request(string $method, string $url, array $options = []): \Symfony\Contracts\HttpClient\ResponseInterface
     {
         if ($this->accessToken) {
-            $options['query'] = \array_merge($options['query'] ?? [], $this->accessToken->toQuery());
+            $options['query'] = \array_merge((array) ($options['query'] ?? []), $this->accessToken->toQuery());
         }
 
         $options = RequestUtil::formatBody($options);
 
-        return $this->client->request($method, ltrim($url, '/'), $options);
+        return new Response($this->client->request($method, ltrim($url, '/'), $options));
     }
 
     /**

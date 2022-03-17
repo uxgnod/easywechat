@@ -41,10 +41,10 @@ class Application implements ApplicationInterface
     {
         if (!$this->account) {
             $this->account = new Account(
-                appId: $this->config->get('app_id'),
-                secret: $this->config->get('secret'),
-                token: $this->config->get('token'),
-                aesKey: $this->config->get('aes_key'),
+                appId: (string) $this->config->get('app_id'),   /** @phpstan-ignore-line */
+                secret: (string) $this->config->get('secret'),  /** @phpstan-ignore-line */
+                token: (string) $this->config->get('token'),    /** @phpstan-ignore-line */
+                aesKey: (string) $this->config->get('aes_key'), /** @phpstan-ignore-line */
             );
         }
 
@@ -228,13 +228,13 @@ class Application implements ApplicationInterface
                 'client_secret' => $this->getAccount()->getSecret(),
                 'redirect_url' => $this->config->get('oauth.redirect_url'),
             ]
-        ))->scopes($this->config->get('oauth.scopes', ['snsapi_userinfo']));
+        ))->scopes((array) $this->config->get('oauth.scopes', ['snsapi_userinfo']));
     }
 
     /**
      * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
      */
-    public function getOfficialAccount(AuthorizerAccessToken $authorizerAccessToken, array $config): OfficialAccountApplication
+    public function getOfficialAccount(AuthorizerAccessToken $authorizerAccessToken, array $config = []): OfficialAccountApplication
     {
         $config = new OfficialAccountConfig(
             \array_merge(
@@ -258,7 +258,7 @@ class Application implements ApplicationInterface
     /**
      * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
      */
-    public function getMiniApp(AuthorizerAccessToken $authorizerAccessToken, array $config): MiniAppApplication
+    public function getMiniApp(AuthorizerAccessToken $authorizerAccessToken, array $config = []): MiniAppApplication
     {
         $app = new MiniAppApplication(
             \array_merge(
@@ -289,7 +289,7 @@ class Application implements ApplicationInterface
 
                 'redirect_url' => $this->config->get('oauth.redirect_url'),
             ]
-        ))->scopes($config->get('oauth.scopes', ['snsapi_userinfo']));
+        ))->scopes((array) $config->get('oauth.scopes', ['snsapi_userinfo']));
     }
 
     public function createClient(): AccessTokenAwareClient

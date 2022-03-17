@@ -4,19 +4,23 @@
 
 ## 实例化
 
+请按如下格式配置你的开放平台账号信息，并实例化一个开放平台对象：
+
 ```php
 <?php
 use EasyWeChat\OpenPlatform\Application;
 
 $config = [
-  'app_id' => 'wx3cf0f39249eb0exx',
-  'secret' => 'f1c242f4f28f735d4687abb469072axx',
-  'token' => 'easywechat',
-  'aes_key' => '' // 明文模式请勿填写 EncodingAESKey
+  'app_id' => 'wx3cf0f39249eb0exx', // 开放平台账号的 appid
+  'secret' => 'f1c242f4f28f735d4687abb469072axx',   // 开放平台账号的 secret
+  'token' => 'easywechat',  // 开放平台账号的 token
+  'aes_key' => ''   // 明文模式请勿填写 EncodingAESKey
 ];
 
 $app = new Application($config);
 ```
+
+> 💡 请不要把公众号/小程序的配置信息用于初始化开放平台。
 
 ## API
 
@@ -48,7 +52,9 @@ $app->getClient();
 $config = $app->getConfig();
 ```
 
-你可以轻松使用 `$config->get($key, $default)` 读取配置，或使用 `$config->set($key, $value)` 在调用前修改配置项。
+你可以轻松使用 `$config->all()` 获取整个配置的数组。
+
+还可以使用 `$config->get($key, $default)` 读取单个配置，或使用 `$config->set($key, $value)` 在调用前修改配置项。
 
 ### ComponentAccessToken
 
@@ -137,9 +143,9 @@ $authorization->toJson();
 
 ## 获取/刷新接口调用令牌
 
-在公众号/小程序接口调用令牌（`authorizer_access_token`）失效时，可以使用刷新令牌（authorizer_refresh_token）获取新的接口调用令牌。
+在公众号/小程序接口调用令牌 `authorizer_access_token` 失效时，可以使用刷新令牌 `authorizer_refresh_token` 获取新的接口调用令牌。
 
-> horizer_access_token`有效期为 2 小时，开发者需要缓存`authorizer_access_token`，避免获取/刷新接口调用令牌的 API 调用触发每日限额。缓存方法可以参考：<https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html>
+> authorizer_access_token`有效期为 2 小时，开发者需要缓存 `authorizer_access_token`，避免获取/刷新接口调用令牌的 API 调用触发每日限额。
 
 ```php
 $authorizerAppId = '授权方 appid';
@@ -156,13 +162,13 @@ $app->refreshAuthorizerToken($authorizerAppId, $authorizerRefreshToken)
 
 ---
 
-## 代替公众号/小程序请求公众平台 API
+## 代替公众号/小程序请求 API
 
-代替公众号/小程序请求，需要首先拿到 `EasyWeChat\OpenPlatform\AuthorizerAccessToken`。
+代替公众号/小程序请求，需要首先拿到 `EasyWeChat\OpenPlatform\AuthorizerAccessToken`，用以代替公众号的 Access Token，官方流程说明：[开发前必读 /Token生成介绍](https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/api/Before_Develop/creat_token.html) 。
 
-**获取 AuthorizerAccessToken**
+### 获取 AuthorizerAccessToken
 
-第一种方式：开放平台永久授权码换取授权者信息
+你可以使用开放 **平台永久授权码** 换取授权者信息，然后换取 Authorizer Access Token：
 
 ```php
 $authorizationCode = '授权成功时返回给第三方平台的授权码';
@@ -170,49 +176,39 @@ $authorization = $app->getAuthorization($authorizationCode);
 $authorizerAccessToken = $authorization->getAccessToken();
 ```
 
-第二种方式：从数据库提取出来的授权码
+> 🚨 Authorizer Access Token 只有 2 小时有效期，不建议将它存储到数据库，当然如果你不得不这么做，请记得参考上面 「**获取/刷新接口调用令牌**」章节刷新。
+
+如果想要使用缓存的 `authorizer_access_token`，那么你也可以从缓存中取出它来初始化一个 AuthorizerAccessToken： 
 
 ```php
+use EasyWeChat\OpenPlatform\AuthorizerAccessToken;
+
+// $token 为你存到数据库的授权码 authorizer_access_token
 $authorizerAccessToken = new AuthorizerAccessToken($authorizerAppId, $token);
 ```
 
-**获取公众号实例**
+### 代公众号调用
 
 ```php
-
-// 公众号配置
-$officialAccountConfig = [
-  'app_id' => 'wx3cf0f39249eb0exx',
-  'secret' => 'f1c242f4f28f735d4687abb469072axx',
-  'token' => 'easywechat',
-  'aes_key' => '' 
-];
-
-$officialAccount = $app->getOfficialAccount($authorizerAccessToken, $officialAccountConfig);
+$officialAccount = $app->getOfficialAccount($authorizerAccessToken);
 
 // 调用公众号接口
-$users = $officialAccount->getClient()->get('cgi-bin/users/list')->toArray();
+$response = $officialAccount->getClient()->get('cgi-bin/users/list');
 ```
 
 > `$officialAccount` 为 `EasyWeChat\OfficialAccount\Application` 实例
 
 :book: 更多公众号用法请参考：[公众号](../official-account/index.md)
 
-**获取小程序实例**
+### 代小程序调用
 
 ```php
-// 小程序配置
-$officialAccountConfig = [
-  'app_id' => 'wx3cf0f39249eb0exx',
-  'secret' => 'f1c242f4f28f735d4687abb469072axx',
-  'token' => 'easywechat',
-  'aes_key' => '' 
-];
-
-$miniApp = $app->getMiniApp($authorizerAccessToken, $miniAppConfig);
+$miniApp = $app->getMiniApp($authorizerAccessToken);
 
 // 调用小程序接口
-$users = $miniApp->getClient()->getClient()->get('cgi-bin/users/list')->toArray();
+$response = $miniApp->getClient()->get('cgi-bin/users/list');
 ```
+
+- [微信官方文档 - 开放平台代小程序实现小程序登录接口](https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/api/others/WeChat_login.html#请求地址)
 
 :book: 更多小程序用法请参考：[小程序](../mini-app/index.md)
